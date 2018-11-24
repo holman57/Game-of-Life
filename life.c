@@ -5,6 +5,7 @@
 #include <sys/ioctl.h>
 #include <stdbool.h>
 #include <string.h>
+
 /*                      Luke Holman - September 22, 2018
                         The Game of Life                            */
 struct winsize size;
@@ -16,14 +17,16 @@ struct dot
     int y;
 };
 struct termios orig_termios;
-
-void initalize_arr(), draw_frame(), draw_cursor(), move_dots(), print_buff();
-int key_hit(), check_neighbors();
-char getch();
-
 int cursorX = 0, cursorY = 0;
 bool edit_mode = true;
 bool mass_edit = false;
+
+int check_neighbors(), key_hit();
+
+void draw_frame(), print_buff(), draw_cursor(), initalize_arr(), move_dots(),
+        reset_terminal_mode();
+
+char getch();
 
 int main()
 {
@@ -67,7 +70,9 @@ void move_dots(int rowSize,
     for (; row < rowSize; row++)
     {
         for (; col < colSize; col++)
+        {
             tDots[row][col] = dots[row][col];
+        }
         col = 0;
     }
     row = 0, col = 0;
@@ -77,17 +82,15 @@ void move_dots(int rowSize,
         {
             dot_i.x = col;
             dot_i.y = row;
-            // 1) Any live cell with fewer than two live neighbors dies
+            //     1) Any live cell with fewer than two live neighbors dies
             if (check_neighbors(rowSize, colSize, tDots, dot_i) < 2)
             {
                 dots[row][col] = 0;
-            }
-            // 2) Any live cell with more than three live neighbors dies
+            }//    2) Any live cell with more than three live neighbors dies
             if (check_neighbors(rowSize, colSize, tDots, dot_i) > 3)
             {
                 dots[row][col] = 0;
-            }
-            // 3) Any live cell with two or three live neighbors lives on
+            }//    3) Any live cell with two or three live neighbors lives on
             if (tDots[row][col])
             {
                 if (check_neighbors(rowSize, colSize, tDots, dot_i) == 3 ||
@@ -95,8 +98,7 @@ void move_dots(int rowSize,
                 {
                     dots[row][col] = 1;
                 }
-            }
-            // 4) Any dead cell with exactly three live neighbors becomes live
+            }//    4) Any dead cell with exactly three live neighbors becomes live
             if (!tDots[row][col])
             {
                 if (check_neighbors(rowSize, colSize, tDots, dot_i) == 3)
@@ -139,15 +141,14 @@ int key_hit(int rowSize,
 {
     char c = getch();
     if (c == '\033')
-    {                   //            escape sequence
+    {  //            escape sequence
         getch();        //              skip first [
         switch (getch())
         {
             default:
                 break;
             case 'A':
-            {
-                // arrow up          /|
+            { // arrow up          /|
                 if (edit_mode)
                 {
                     cursorY--;
@@ -158,8 +159,7 @@ int key_hit(int rowSize,
                 break;
             }
             case 'B':
-            {
-                // arrow down        \|
+            { // arrow down        \|
                 if (edit_mode)
                 {
                     cursorY++;
@@ -170,8 +170,7 @@ int key_hit(int rowSize,
                 break;
             }
             case 'C':
-            {
-                // arrow right       >>
+            { // arrow right       >>
                 if (edit_mode)
                 {
                     cursorX++;
@@ -182,8 +181,7 @@ int key_hit(int rowSize,
                 break;
             }
             case 'D':
-            {
-                // arrow left        <<
+            { // arrow left        <<
                 if (edit_mode)
                 {
                     cursorX--;
@@ -202,15 +200,13 @@ int key_hit(int rowSize,
             default:
                 break;
             case 10:
-            {
-                //                   enter
+            { //                   enter
                 if (edit_mode) edit_mode = false;
                 else edit_mode = true;
                 break;
             }
             case 32:
-            {
-                //                   space
+            { //                   space
                 if (edit_mode)
                 {
                     if (dots[cursorY][cursorX] == 0)
@@ -220,8 +216,7 @@ int key_hit(int rowSize,
                 break;
             }
             case 109:
-            {
-                //                    m
+            { //                    m
                 if (edit_mode)
                 {
                     if (mass_edit) mass_edit = false;
@@ -232,7 +227,6 @@ int key_hit(int rowSize,
         }
         return 1;
     }
-    return 0;
 }
 
 char getch()
@@ -254,6 +248,20 @@ char getch()
     if (tcsetattr(0, TCSADRAIN, &old) < 0)
         perror("tcsetattr ~ICANON");
     return (buf);
+}
+
+void reset_terminal_mode()
+{
+    tcsetattr(0, TCSANOW, &orig_termios);
+}
+
+int kbhit()
+{
+    struct timeval tv = {0L, 0L};
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(0, &fds);
+    return select(1, &fds, NULL, NULL, &tv);
 }
 
 void draw_cursor(int rowSize,
@@ -340,7 +348,9 @@ void print_buff(int rowSize,
     for (; row < rowSize; row++)
     {
         for (; col < colSize; col++)
+        {
             printf("%c", buff[row][col]);
+        }
         col = 0;
         printf("\n");
     }
@@ -354,8 +364,9 @@ void initalize_arr(int rowSize,
     for (; row < rowSize; row++)
     {
         for (; col < colSize; col++)
+        {
             pInt[row][col] = 0;
+        }
         col = 0;
     }
 }
-
